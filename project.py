@@ -9,19 +9,19 @@ import argparse
 
 
 def main():
-    pixed = pixellate(sys.argv[1], size=15)
+    pixed = pixellate(sys.argv[1], size=9)
     if args.m == "pixelize":
         print("Pixellating and reducing size of image")
-        pix_to_image(pixed)
+        pix_to_image(pixed, filename=args.o + '.png')
     elif args.m == "arrows":
         print("Converting image to arrows")
-        arrows(pixed, args.r, gscale=args.g)
+        arrows(pixed, args.r, gscale=args.g, filename=args.o + '.svg')
     elif args.m == "dotty":
         print("Converting image to sized dots")
-        draw_dot_map(pixed, args.r)
+        draw_dot_map(pixed, args.r, filename=args.o + '.svg')
     elif args.m == "circles":
         print("Converting image to circles")
-        draw_circle(pixed, args.r, gscale=args.g)
+        draw_circle(pixed, args.r, gscale=args.g, filename=args.o + '.svg')
 
 
 def pixellate(image, size=15):
@@ -50,17 +50,22 @@ def distribute_both_ends(crop: int):
     return spread
 
 
-def pix_to_image(pix_array, filename='pixed.png'):
+def pix_to_image(pix_array, filename='output.png'):
     new_image = Image.fromarray(pix_array)
     new_image.save(filename)
 
 
-def draw_circle(cmap, res: int, gscale=False):
-    if gscale:
-        cmap = grayscale(cmap)
-    sfc = cairo.SVGSurface('test.svg', cmap.shape[1]*res, cmap.shape[0]*res)
+def setup_vector_draw(cmap, res: int, filename="output.svg"):
+    sfc = cairo.SVGSurface(filename, cmap.shape[1] * res, cmap.shape[0] * res)
     ctx = cairo.Context(sfc)
     ctx.scale(res, res)
+    return sfc, ctx
+
+
+def draw_circle(cmap, res: int, gscale=False, filename="output.svg"):
+    if gscale:
+        cmap = grayscale(cmap)
+    sfc, ctx = setup_vector_draw(cmap, res, filename)
     for x, i in enumerate(cmap):
         for y, j in enumerate(i):
             ctx.set_source_rgb(*j/256)
@@ -71,12 +76,10 @@ def draw_circle(cmap, res: int, gscale=False):
     sfc.flush()
 
 
-def draw_dot_map(cmap, res: int):
+def draw_dot_map(cmap, res: int, filename="output.svg"):
     cmap = grayscale(cmap)
-    sfc = cairo.SVGSurface('test.svg', cmap.shape[1]*res, cmap.shape[0]*res)
-    ctx = cairo.Context(sfc)
+    sfc, ctx = setup_vector_draw(cmap, res, filename)
     ctx.set_source_rgb(0, 0, 0)
-    ctx.scale(res, res)
     for x, i in enumerate(cmap):
         for y, j in enumerate(i):
             ctx.arc(y, x, (1 - j[0]/256)/1.5, 0, 2 * math.pi)
@@ -86,12 +89,10 @@ def draw_dot_map(cmap, res: int):
     sfc.flush()
 
 
-def arrows(cmap, res: int, line_width=0.2, arrow_length=0.7, end_length=0.3, gscale=False):
+def arrows(cmap, res: int, line_width=0.2, arrow_length=0.7, end_length=0.3, gscale=False, filename="output.svg"):
     if gscale:
         cmap = grayscale(cmap)
-    sfc = cairo.SVGSurface('test.svg', cmap.shape[1]*res, cmap.shape[0]*res)
-    ctx = cairo.Context(sfc)
-    ctx.scale(res, res)
+    sfc, ctx = setup_vector_draw(cmap, res, filename)
     ctx.set_line_width(line_width)
     new_row = False
     for y, i in enumerate(cmap):
@@ -122,7 +123,7 @@ def arrows(cmap, res: int, line_width=0.2, arrow_length=0.7, end_length=0.3, gsc
     sfc.flush()
 
 
-def grayscale(cmap):
+def grayscale(cmap: np.array):
     for i in cmap:
         for j in i:
             av = np.average(j)
@@ -133,6 +134,7 @@ def grayscale(cmap):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("f", help='Filename of image to alter')
+    parser.add_argument("-o", default='output', help='Filename of output image')
     parser.add_argument("-m", default='pixelize', help='Select Mode, options are: arrows, pixelize, circles, dotty')
     parser.add_argument("-r", default=20, help='Resolution of image', type=int)
     parser.add_argument("-g", default=False, help='Enable Grayscale', type=bool)
