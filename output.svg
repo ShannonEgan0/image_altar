@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="2260pt" height="1220pt" viewBox="0 0 2260 1220" version="1.1">
 <g id="surface1">
+<rect x="0" y="0" width="2260" height="1220" style="fill:rgb(0%,0%,0%);fill-opacity:1;stroke:none;"/>
 <path style="fill:none;stroke-width:0.2;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(79.296875%,80.46875%,81.640625%);stroke-opacity:1;stroke-miterlimit:10;" d="M 0.35 0.05 L 0.35 0.75 M 0.65 0.35 L 0.35 0.05 L 0.05 0.35 " transform="matrix(20,0,0,20,0,0)"/>
 <path style="fill:none;stroke-width:0.2;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(80.46875%,81.640625%,82.8125%);stroke-opacity:1;stroke-miterlimit:10;" d="M 0.95 0.35 L 1.65 0.35 M 1.35 0.65 L 1.65 0.35 L 1.35 0.05 " transform="matrix(20,0,0,20,0,0)"/>
 <path style="fill:none;stroke-width:0.2;stroke-linecap:butt;stroke-linejoin:miter;stroke:rgb(81.25%,82.03125%,83.59375%);stroke-opacity:1;stroke-miterlimit:10;" d="M 2.35 0.05 L 2.35 0.75 M 2.65 0.35 L 2.35 0.05 L 2.05 0.35 " transform="matrix(20,0,0,20,0,0)"/>

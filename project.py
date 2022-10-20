@@ -15,7 +15,7 @@ def main():
         pix_to_image(pixed, filename=args.o + '.png')
     elif args.m == "arrows":
         print("Converting image to arrows")
-        arrows(pixed, args.r, gscale=args.g, filename=args.o + '.svg')
+        arrows(pixed, args.r, gscale=args.g, filename=args.o + '.svg', background=args.bg)
     elif args.m == "dotty":
         print("Converting image to sized dots")
         draw_dot_map(pixed, args.r, filename=args.o + '.svg')
@@ -24,7 +24,7 @@ def main():
         draw_circle(pixed, args.r, gscale=args.g, filename=args.o + '.svg')
 
 
-def pixellate(image, size=15):
+def pixellate(image: str, size=15):
     raw_image = Image.open(image)
     # noinspection PyTypeChecker
     pix = np.array(raw_image)
@@ -45,30 +45,31 @@ def pixellate(image, size=15):
 
 
 def distribute_both_ends(crop: int):
-    cropr = np.arange(crop)
+    cropr = np.arange(int(crop))
     spread = [i - crop if i > crop/2-1 else i for i in cropr]
     return spread
 
 
-def pix_to_image(pix_array, filename='output.png'):
+def pix_to_image(pix_array: np.array, filename='output.png'):
     new_image = Image.fromarray(pix_array)
     new_image.save(filename)
 
 
-def setup_vector_draw(cmap, res: int, filename="output.svg"):
+def setup_vector_draw(cmap: np.array, res: int, filename="output.svg"):
     sfc = cairo.SVGSurface(filename, cmap.shape[1] * res, cmap.shape[0] * res)
     ctx = cairo.Context(sfc)
     ctx.scale(res, res)
-    return sfc, ctx
+    cmap = cmap/256
+    return sfc, ctx, cmap
 
 
-def draw_circle(cmap, res: int, gscale=False, filename="output.svg"):
+def draw_circle(cmap: np.array, res: int, gscale=False, filename="output.svg"):
     if gscale:
         cmap = grayscale(cmap)
-    sfc, ctx = setup_vector_draw(cmap, res, filename)
+    sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
     for x, i in enumerate(cmap):
         for y, j in enumerate(i):
-            ctx.set_source_rgb(*j/256)
+            ctx.set_source_rgb(*j)
             ctx.arc(y, x, 0.5, 0, 2 * math.pi)
             ctx.close_path()
             ctx.fill()
@@ -76,23 +77,26 @@ def draw_circle(cmap, res: int, gscale=False, filename="output.svg"):
     sfc.flush()
 
 
-def draw_dot_map(cmap, res: int, filename="output.svg"):
+def draw_dot_map(cmap: np.array, res: int, filename="output.svg"):
     cmap = grayscale(cmap)
-    sfc, ctx = setup_vector_draw(cmap, res, filename)
+    sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
     ctx.set_source_rgb(0, 0, 0)
     for x, i in enumerate(cmap):
         for y, j in enumerate(i):
-            ctx.arc(y, x, (1 - j[0]/256)/1.5, 0, 2 * math.pi)
+            ctx.arc(y, x, (1 - j[0])/1.5, 0, 2 * math.pi)
             ctx.close_path()
             ctx.fill()
     sfc.finish()
     sfc.flush()
 
 
-def arrows(cmap, res: int, line_width=0.2, arrow_length=0.7, end_length=0.3, gscale=False, filename="output.svg"):
+def arrows(cmap: np.array, res: int, line_width=0.2, arrow_length=0.7,
+           end_length=0.3, gscale=False, filename="output.svg", background=5):
     if gscale:
         cmap = grayscale(cmap)
-    sfc, ctx = setup_vector_draw(cmap, res, filename)
+    sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
+    if 1 >= background >= 0:
+        draw_bg(background, cmap.shape[1], cmap.shape[0], ctx)
     ctx.set_line_width(line_width)
     new_row = False
     for y, i in enumerate(cmap):
@@ -103,7 +107,7 @@ def arrows(cmap, res: int, line_width=0.2, arrow_length=0.7, end_length=0.3, gsc
             direction = "UP"
             new_row = True
         for x, j in enumerate(i):
-            ctx.set_source_rgb(*(j / 256))
+            ctx.set_source_rgb(*j)
             if direction == "RIGHT":
                 ctx.move_to(x-line_width/4, y+arrow_length/2)
                 ctx.rel_line_to(arrow_length, 0)
@@ -131,6 +135,13 @@ def grayscale(cmap: np.array):
     return cmap
 
 
+def draw_bg(colour: float, width: int, height: int, ctx):
+    ctx.set_source_rgb(colour, colour, colour)
+    ctx.rectangle(0, 0, width, height)
+    ctx.fill()
+    ctx.move_to(0, 0)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("f", help='Filename of image to alter')
@@ -138,5 +149,6 @@ if __name__ == '__main__':
     parser.add_argument("-m", default='pixelize', help='Select Mode, options are: arrows, pixelize, circles, dotty')
     parser.add_argument("-r", default=20, help='Resolution of image', type=int)
     parser.add_argument("-g", default=False, help='Enable Grayscale', type=bool)
+    parser.add_argument("-bg", default=2, help='Enable Background Shade, between 0 and 1', type=float)
     args = parser.parse_args()
     main()
