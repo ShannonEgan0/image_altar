@@ -63,10 +63,11 @@ def setup_vector_draw(cmap: np.array, res: int, filename="output.svg"):
     return sfc, ctx, cmap
 
 
-def draw_circle(cmap: np.array, res: int, gscale=False, filename="output.svg"):
+def draw_circle(cmap: np.array, res: int, gscale=False, filename="output.svg", background=5):
     if gscale:
         cmap = grayscale(cmap)
     sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
+    draw_bg(background, cmap.shape[1], cmap.shape[0], ctx)
     for x, i in enumerate(cmap):
         for y, j in enumerate(i):
             ctx.set_source_rgb(*j)
@@ -77,9 +78,10 @@ def draw_circle(cmap: np.array, res: int, gscale=False, filename="output.svg"):
     sfc.flush()
 
 
-def draw_dot_map(cmap: np.array, res: int, filename="output.svg"):
+def draw_dot_map(cmap: np.array, res: int, filename="output.svg", background=5):
     cmap = grayscale(cmap)
     sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
+    draw_bg(background, cmap.shape[1], cmap.shape[0], ctx)
     ctx.set_source_rgb(0, 0, 0)
     for x, i in enumerate(cmap):
         for y, j in enumerate(i):
@@ -95,8 +97,7 @@ def arrows(cmap: np.array, res: int, line_width=0.2, arrow_length=0.7,
     if gscale:
         cmap = grayscale(cmap)
     sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
-    if 1 >= background >= 0:
-        draw_bg(background, cmap.shape[1], cmap.shape[0], ctx)
+    draw_bg(background, cmap.shape[1], cmap.shape[0], ctx)
     ctx.set_line_width(line_width)
     new_row = False
     for y, i in enumerate(cmap):
@@ -136,10 +137,11 @@ def grayscale(cmap: np.array):
 
 
 def draw_bg(colour: float, width: int, height: int, ctx):
-    ctx.set_source_rgb(colour, colour, colour)
-    ctx.rectangle(0, 0, width, height)
-    ctx.fill()
-    ctx.move_to(0, 0)
+    if 1 >= colour >= 0:
+        ctx.set_source_rgb(colour, colour, colour)
+        ctx.rectangle(0, 0, width, height)
+        ctx.fill()
+        ctx.move_to(0, 0)
 
 
 if __name__ == '__main__':
@@ -149,6 +151,7 @@ if __name__ == '__main__':
     parser.add_argument("-m", default='pixelize', help='Select Mode, options are: arrows, pixelize, circles, dotty')
     parser.add_argument("-r", default=20, help='Resolution of image', type=int)
     parser.add_argument("-g", default=False, help='Enable Grayscale', type=bool)
-    parser.add_argument("-bg", default=2, help='Enable Background Shade, between 0 and 1', type=float)
+    parser.add_argument("-bg", default=2, help='Enable Background Shade, between 0 and 1, '
+                                               'default is transparent', type=float)
     args = parser.parse_args()
     main()
