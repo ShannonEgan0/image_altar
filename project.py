@@ -118,20 +118,22 @@ def draw_stars(cmap: np.array, res: int, gscale=False, filename="output.svg", ba
     sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
     draw_bg(background, cmap.shape[1], cmap.shape[0], ctx)
     h = 0.4
+    s = 10
     for x, i in enumerate(cmap):
+        spin = x * s * np.pi / 180
         for y, j in enumerate(i):
+            spin = spin + s * np.pi / 180
             ctx.set_source_rgb(*j)
-            ctx.move_to(y+0.5, x+0.5)
-            ctx.rel_line_to(h * np.sin(18 * np.pi / 180), h * np.cos(18 * np.pi / 180))
-            ctx.rel_line_to(h, 0)
-            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180), h * np.sin(36 * np.pi / 180))
-            ctx.rel_line_to(h * np.cos(72 * np.pi / 180), h * np.sin(72 * np.pi / 180))
-            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180), -h * np.sin(36 * np.pi / 180))
-            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180), h * np.sin(36 * np.pi / 180))
-            ctx.rel_line_to(h * np.cos(72 * np.pi / 180), -h * np.sin(72 * np.pi / 180))
-            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180), -h * np.sin(36 * np.pi / 180))
-            ctx.rel_line_to(h, 0)
-            ctx.rel_line_to(h * np.sin(18 * np.pi / 180), -h * np.cos(18 * np.pi / 180))
+            ctx.move_to(y + 0.5 + h * np.cos(spin), x + 0.5 + h * np.sin(spin))
+            ctx.rel_line_to(h * np.sin(18 * np.pi / 180 - spin), h * np.cos(18 * np.pi / 180 - spin))
+            ctx.rel_line_to(h * np.cos(spin), h * np.sin(spin))
+            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180 - spin), h * np.sin(36 * np.pi / 180 - spin))
+            ctx.rel_line_to(h * np.cos(72 * np.pi / 180 + spin), h * np.sin(72 * np.pi / 180 + spin))
+            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180 + spin), -h * np.sin(36 * np.pi / 180 + spin))
+            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180 - spin), h * np.sin(36 * np.pi / 180 - spin))
+            ctx.rel_line_to(h * np.cos(72 * np.pi / 180 - spin), -h * np.sin(72 * np.pi / 180 - spin))
+            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180 + spin), -h * np.sin(36 * np.pi / 180 + spin))
+            ctx.rel_line_to(h * np.cos(spin), h * np.sin(spin))
             ctx.fill()
     sfc.finish()
     sfc.flush()
