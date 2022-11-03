@@ -1,4 +1,5 @@
 # Test program for 'image_altar' or 'project.py'
+# Note that the unit test will refer to files "test.png" and "test.svg", if these already exist errrors will be raised
 
 from pytest import raises
 from project import grayscale, distribute_both_ends, setup_vector_draw, pix_to_image, pixellate
@@ -27,6 +28,7 @@ def test_grayscale_outputs():
     assert np.allclose(grayscale(np.array([[[0.1, 0.2, 0.6]]])), np.array([[[0.3, 0.3, 0.3]]]))
 
 
+# noinspection PyTypeChecker
 def test_distribute_input():
     with raises(ValueError):
         distribute_both_ends("APPLE")
@@ -79,12 +81,15 @@ def test_pixellate():
         imarray = np.array([[[255, 255, 255]] * 50] * 60, dtype=np.uint8)
         pix_to_image(imarray, filename='test.png')
         assert pixellate('test.png').shape == (4, 3, 3)
+        assert pixellate('test.png', blocksize=5).shape == (12, 10, 3)
+        with raises(ValueError):
+            pixellate('test.png', blocksize=70)
         imarray = np.array([[[255, 255, 255]] * 400] * 300, dtype=np.uint8)
         pix_to_image(imarray, filename='test.png')
         assert pixellate('test.png').shape == (20, 26, 3)
         imarray = np.array([[[255, 255, 255]] * 50] * 60, dtype=np.uint8)
         pix_to_image(imarray, filename='test.png')
-        assert pixellate('test.png', size=3).shape == (20, 16, 3)
+        assert pixellate('test.png', blocksize=3).shape == (20, 16, 3)
         if os.path.exists('test.png'):
             os.remove('test.png')
         with raises(FileNotFoundError):

@@ -1,6 +1,6 @@
 # Testing bitmap formatting and information with libraries
 
-from PIL import Image
+from PIL import Image, ImageOps
 import numpy as np
 import cairo
 import math
@@ -9,36 +9,46 @@ import argparse
 
 
 def main():
-    pixed = pixellate(sys.argv[1], size=9)
+    pixed = pixellate(sys.argv[1], blocksize=args.r)
     if args.m == "pixelize":
         print("Pixellating and reducing size of image")
-        pix_to_image(pixed, filename=args.o + '.png')
+        pix_to_image(pixed, gscale=args.g, filename=args.o + '.png')
     elif args.m == "arrows":
         print("Converting image to arrows")
-        arrows(pixed, args.r, gscale=args.g, filename=args.o + '.svg', background=args.bg)
+        arrows(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
+    elif args.m == "squiggles":
+        print("Converting image to squiggles")
+        squiggles(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
+    elif args.m == "stars":
+        print("Converting image to stars")
+        draw_stars(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
     elif args.m == "dotty":
         print("Converting image to sized dots")
-        draw_dot_map(pixed, args.r, filename=args.o + '.svg')
+        draw_dot_map(pixed, args.s, filename=args.o + '.svg', background=args.bg)
     elif args.m == "circles":
         print("Converting image to circles")
-        draw_circle(pixed, args.r, gscale=args.g, filename=args.o + '.svg')
+        draw_circle(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
 
 
-def pixellate(image: str, size=15):
+def pixellate(image: str, blocksize=15):
     raw_image = Image.open(image)
     # noinspection PyTypeChecker
-    pix = np.array(raw_image)
-    crop_w = raw_image.size[1] % size
-    crop_l = raw_image.size[0] % size
+    pix = np.array(ImageOps.exif_transpose(raw_image))
+    if raw_image.size[0] < blocksize:
+        raise ValueError("Pixel block size is greater than the number of pixels in the width of the image")
+    elif raw_image.size[0] < blocksize:
+        raise ValueError("Pixel block size is greater than the number of pixels in the height of the image")
+    crop_w = raw_image.size[1] % blocksize
+    crop_l = raw_image.size[0] % blocksize
     pix = np.delete(pix, distribute_both_ends(crop_l), 1)
     pix = np.delete(pix, distribute_both_ends(crop_w), 0)
     new = []
-    for x in range(int(pix.shape[0] / size)):
+    for x in range(int(pix.shape[0] / blocksize)):
         new_row = []
-        for y in range(int(pix.shape[1] / size)):
-            r = np.average(pix[x * size:x * size + size, y * size:y * size + size, 0])
-            g = np.average(pix[x * size:x * size + size, y * size:y * size + size, 1])
-            b = np.average(pix[x * size:x * size + size, y * size:y * size + size, 2])
+        for y in range(int(pix.shape[1] / blocksize)):
+            r = np.average(pix[x * blocksize:x * blocksize + blocksize, y * blocksize:y * blocksize + blocksize, 0])
+            g = np.average(pix[x * blocksize:x * blocksize + blocksize, y * blocksize:y * blocksize + blocksize, 1])
+            b = np.average(pix[x * blocksize:x * blocksize + blocksize, y * blocksize:y * blocksize + blocksize, 2])
             new_row.append((r, g, b))
         new.append(new_row)
     return np.array(new, dtype=np.uint8)
@@ -50,11 +60,15 @@ def distribute_both_ends(crop: int):
     return spread
 
 
-def pix_to_image(pix_array: np.array, filename='output.png'):
+# Saves pixellated image, can be used for other bitmap outputs in future
+def pix_to_image(pix_array: np.array, gscale=False, filename='output.png'):
+    if gscale:
+        pix_array = grayscale(pix_array)
     new_image = Image.fromarray(pix_array)
     new_image.save(filename)
 
 
+# Sets up a cairo vector surface and context for use by generated vector modes
 def setup_vector_draw(cmap: np.array, res: int, filename="output.svg"):
     sfc = cairo.SVGSurface(filename, cmap.shape[1] * res, cmap.shape[0] * res)
     ctx = cairo.Context(sfc)
@@ -63,6 +77,25 @@ def setup_vector_draw(cmap: np.array, res: int, filename="output.svg"):
     return sfc, ctx, cmap
 
 
+# Modified cmap to grayscale
+def grayscale(cmap: np.array):
+    for i in cmap:
+        for j in i:
+            av = np.average(j)
+            j[:] = av
+    return cmap
+
+
+# Drawing background rectangle for generated vector images
+def draw_bg(colour: float, width: int, height: int, ctx):
+    if 1 >= colour >= 0:
+        ctx.set_source_rgb(colour, colour, colour)
+        ctx.rectangle(0, 0, width, height)
+        ctx.fill()
+        ctx.move_to(0, 0)
+
+
+# Replaces image pixels with circles, background is transparent by default
 def draw_circle(cmap: np.array, res: int, gscale=False, filename="output.svg", background=5):
     if gscale:
         cmap = grayscale(cmap)
@@ -78,11 +111,39 @@ def draw_circle(cmap: np.array, res: int, gscale=False, filename="output.svg", b
     sfc.flush()
 
 
+# Replaces image pixels with stars, background is transparent by default
+def draw_stars(cmap: np.array, res: int, gscale=False, filename="output.svg", background=5):
+    if gscale:
+        cmap = grayscale(cmap)
+    sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
+    draw_bg(background, cmap.shape[1], cmap.shape[0], ctx)
+    h = 0.4
+    for x, i in enumerate(cmap):
+        for y, j in enumerate(i):
+            ctx.set_source_rgb(*j)
+            ctx.move_to(y+0.5, x+0.5)
+            ctx.rel_line_to(h * np.sin(18 * np.pi / 180), h * np.cos(18 * np.pi / 180))
+            ctx.rel_line_to(h, 0)
+            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180), h * np.sin(36 * np.pi / 180))
+            ctx.rel_line_to(h * np.cos(72 * np.pi / 180), h * np.sin(72 * np.pi / 180))
+            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180), -h * np.sin(36 * np.pi / 180))
+            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180), h * np.sin(36 * np.pi / 180))
+            ctx.rel_line_to(h * np.cos(72 * np.pi / 180), -h * np.sin(72 * np.pi / 180))
+            ctx.rel_line_to(-h * np.cos(36 * np.pi / 180), -h * np.sin(36 * np.pi / 180))
+            ctx.rel_line_to(h, 0)
+            ctx.rel_line_to(h * np.sin(18 * np.pi / 180), -h * np.cos(18 * np.pi / 180))
+            ctx.fill()
+    sfc.finish()
+    sfc.flush()
+
+
+# Replaces image pixels with circles of varying radius according to shade
+# Single tone only, specified tone in args.cc, default is grayscale
 def draw_dot_map(cmap: np.array, res: int, filename="output.svg", background=5):
     cmap = grayscale(cmap)
     sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
     draw_bg(background, cmap.shape[1], cmap.shape[0], ctx)
-    ctx.set_source_rgb(0, 0, 0)
+    ctx.set_source_rgb(*args.cc)
     for x, i in enumerate(cmap):
         for y, j in enumerate(i):
             ctx.arc(y, x, (1 - j[0])/1.5, 0, 2 * math.pi)
@@ -92,6 +153,7 @@ def draw_dot_map(cmap: np.array, res: int, filename="output.svg", background=5):
     sfc.flush()
 
 
+# Replaces image pixels with .svg of arrows oriented at 90° to eachother
 def arrows(cmap: np.array, res: int, line_width=0.2, arrow_length=0.7,
            end_length=0.3, gscale=False, filename="output.svg", background=5):
     if gscale:
@@ -128,30 +190,39 @@ def arrows(cmap: np.array, res: int, line_width=0.2, arrow_length=0.7,
     sfc.flush()
 
 
-def grayscale(cmap: np.array):
-    for i in cmap:
-        for j in i:
-            av = np.average(j)
-            j[:] = av
-    return cmap
-
-
-def draw_bg(colour: float, width: int, height: int, ctx):
-    if 1 >= colour >= 0:
-        ctx.set_source_rgb(colour, colour, colour)
-        ctx.rectangle(0, 0, width, height)
-        ctx.fill()
-        ctx.move_to(0, 0)
+# Replace image picels with .svg of squiggly lines running North-West to South-East
+def squiggles(cmap: np.array, res: int, line_width=0.5, gscale=False, filename="output.svg", background=5):
+    if gscale:
+        cmap = grayscale(cmap)
+    sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
+    draw_bg(background, cmap.shape[1], cmap.shape[0], ctx)
+    ctx.set_line_width(line_width)
+    for x, i in enumerate(cmap):
+        for y, j in enumerate(i):
+            ctx.set_source_rgb(*j)
+            ctx.move_to(y, x)
+            ctx.rel_curve_to(0.25, 0, 0.25, 0, 0.251, 0.251)
+            ctx.rel_curve_to(0, 0.25, 0, 0.25, 0.251, 0.251)
+            ctx.rel_curve_to(0.25, 0, 0.25, 0, 0.251, 0.251)
+            ctx.rel_curve_to(0, 0.25, 0, 0.25, 0.251, 0.251)
+            ctx.stroke()
+    sfc.finish()
+    sfc.flush()
 
 
 if __name__ == '__main__':
+    # Instituting parsearg operations before running main
     parser = argparse.ArgumentParser()
     parser.add_argument("f", help='Filename of image to alter')
     parser.add_argument("-o", default='output', help='Filename of output image')
-    parser.add_argument("-m", default='pixelize', help='Select Mode, options are: arrows, pixelize, circles, dotty')
-    parser.add_argument("-r", default=20, help='Resolution of image', type=int)
+    parser.add_argument("-m", default='pixelize', help='Select Mode, Valid options are:'
+                                                       ' arrows, pixelize, circles, dotty, squiggles, stars')
+    parser.add_argument("-r", default=20, help='Number of pixels to pixelate image by', type=int)
+    parser.add_argument("-s", default=10, help='Size of Vector Image', type=int)
     parser.add_argument("-g", default=False, help='Enable Grayscale', type=bool)
     parser.add_argument("-bg", default=2, help='Enable Background Shade, between 0 and 1, '
-                                               'default is transparent', type=float)
+                        'default is transparent', type=float)
+    parser.add_argument("-cc", default=(0, 0, 0), help='RGB Code for circle colours (Dotty mode only)',
+                        type=float, nargs=3)
     args = parser.parse_args()
     main()
