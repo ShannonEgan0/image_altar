@@ -21,7 +21,7 @@ def main():
         squiggles(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
     elif args.m == "stars":
         print("Converting image to stars")
-        draw_stars(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
+        draw_stars(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg, spin_angle=args.sa)
     elif args.m == "dotty":
         print("Converting image to sized dots")
         draw_dot_map(pixed, args.s, filename=args.o + '.svg', background=args.bg)
@@ -112,19 +112,17 @@ def draw_circle(cmap: np.array, res: int, gscale=False, filename="output.svg", b
 
 
 # Replaces image pixels with stars, background is transparent by default
-def draw_stars(cmap: np.array, res: int, gscale=False, filename="output.svg", background=5):
+def draw_stars(cmap: np.array, res: int, gscale=False, filename="output.svg", background=5, spin_angle=10):
     if gscale:
         cmap = grayscale(cmap)
     sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
     draw_bg(background, cmap.shape[1], cmap.shape[0], ctx)
     h = 0.4
-    s = 10
     for x, i in enumerate(cmap):
-        spin = x * s * np.pi / 180
         for y, j in enumerate(i):
-            spin = spin + s * np.pi / 180
+            spin = x * spin_angle * np.pi / 180 + y * spin_angle * np.pi / 180
             ctx.set_source_rgb(*j)
-            ctx.move_to(y + 0.5 + h * np.cos(spin), x + 0.5 + h * np.sin(spin))
+            ctx.move_to(y + 0.5 + 0.5 * np.sin(spin), x + 0.5 + 0.5 * np.cos(spin))
             ctx.rel_line_to(h * np.sin(18 * np.pi / 180 - spin), h * np.cos(18 * np.pi / 180 - spin))
             ctx.rel_line_to(h * np.cos(spin), h * np.sin(spin))
             ctx.rel_line_to(-h * np.cos(36 * np.pi / 180 - spin), h * np.sin(36 * np.pi / 180 - spin))
@@ -219,12 +217,13 @@ if __name__ == '__main__':
     parser.add_argument("-o", default='output', help='Filename of output image')
     parser.add_argument("-m", default='pixelize', help='Select Mode, Valid options are:'
                                                        ' arrows, pixelize, circles, dotty, squiggles, stars')
-    parser.add_argument("-r", default=20, help='Number of pixels to pixelate image by', type=int)
+    parser.add_argument("-r", default=20, help='Number of pixels to pixelate image by (Integer)', type=int)
     parser.add_argument("-s", default=10, help='Size of Vector Image', type=int)
-    parser.add_argument("-g", default=False, help='Enable Grayscale', type=bool)
+    parser.add_argument("-g", default=False, help='Enable Grayscale (True or False)', type=bool)
     parser.add_argument("-bg", default=2, help='Enable Background Shade, between 0 and 1, '
                         'default is transparent', type=float)
     parser.add_argument("-cc", default=(0, 0, 0), help='RGB Code for circle colours (Dotty mode only)',
                         type=float, nargs=3)
+    parser.add_argument("-sa", default=0, help='Spin angle in degrees for stars mode (default is no spin)', type=float)
     args = parser.parse_args()
     main()
