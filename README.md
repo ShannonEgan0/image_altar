@@ -44,4 +44,4 @@ that is used to pixelize the original image.
 Example of pixelize outputs below:
 > python project.py Dog_Photos/Olive.jpg -r 20
 |Original picture of Olive|python project.py Dog_Photos/Olive.jpg -r 20|python project.py Dog_Photos/Olive.jpg -r 30|
-|![Olive]<img src="Dog_Photos/Olive.jpg">|![Olive -r 20]<img src="Olive -r 20.jpg">|![Olive -r 30]<img src="Olive -r 30.jpg">|
+|![Olive]<img src="Dog_Photos/Olive.jpg">|![Olive -r 20]<img src="Olive -r 20.png">|![Olive -r 30]<img src="Olive -r 30.png">|
