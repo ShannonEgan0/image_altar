@@ -28,4 +28,3 @@
       -cc CC CC CC  RGB Code for circle colours (Dotty mode only)
       -sa SA        Spin angle in degrees for stars mode (default is no spin)
     '''
-
