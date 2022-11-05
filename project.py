@@ -6,28 +6,47 @@ import cairo
 import math
 import sys
 import argparse
+import os
 
 
 def main():
-    pixed = pixellate(sys.argv[1], blocksize=args.r)
-    if args.m == "pixelize":
-        print("Pixellating and reducing size of image")
-        pix_to_image(pixed, gscale=args.g, filename=args.o + '.png')
-    elif args.m == "arrows":
-        print("Converting image to arrows")
-        arrows(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
-    elif args.m == "squiggles":
-        print("Converting image to squiggles")
-        squiggles(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
-    elif args.m == "stars":
-        print("Converting image to stars")
-        draw_stars(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg, spin_angle=args.sa)
-    elif args.m == "dotty":
-        print("Converting image to sized dots")
-        draw_dot_map(pixed, args.s, filename=args.o + '.svg', background=args.bg)
-    elif args.m == "circles":
-        print("Converting image to circles")
-        draw_circle(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
+    if check_filename(args.o):
+        pixed = pixellate(sys.argv[1], blocksize=args.r)
+        if args.m == "pixelize":
+            print("Pixellating and reducing size of image")
+            pix_to_image(pixed, gscale=args.g, filename=args.o + '.png')
+        elif args.m == "arrows":
+            print("Converting image to arrows")
+            arrows(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
+        elif args.m == "squiggles":
+            print("Converting image to squiggles")
+            squiggles(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
+        elif args.m == "stars":
+            print("Converting image to stars")
+            draw_stars(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg, spin_angle=args.sa)
+        elif args.m == "dotty":
+            print("Converting image to sized dots")
+            draw_dot_map(pixed, args.s, filename=args.o + '.svg', background=args.bg, colour=args.cc)
+        elif args.m == "circles":
+            print("Converting image to circles")
+            draw_circle(pixed, args.s, gscale=args.g, filename=args.o + '.svg', background=args.bg)
+
+
+def check_filename(filename):
+    # Check to see if the output file already exists to avoid accidental file replacement
+    if os.path.exists(filename + '.svg') or os.path.exists(filename + '.png'):
+        while True:
+            yn = input(f"File {filename} already exists, do you want to overwrite? (Y/N): ")
+            if yn.lower().strip() in ("y", "yes"):
+                return True
+            elif yn.lower().strip() in ("n", "no"):
+                print("Operation aborted")
+                return False
+            else:
+                print("Resonse not recognized")
+                pass
+    else:
+        return True
 
 
 def pixellate(image: str, blocksize=15):
@@ -122,7 +141,7 @@ def draw_stars(cmap: np.array, res: int, gscale=False, filename="output.svg", ba
         for y, j in enumerate(i):
             spin = x * spin_angle * np.pi / 180 + y * spin_angle * np.pi / 180
             ctx.set_source_rgb(*j)
-            ctx.move_to(y + 0.5 + 0.5 * np.sin(spin), x + 0.5 + 0.5 * np.cos(spin))
+            ctx.move_to(y + 0.5 + 0.5 * np.sin(spin), x + 0.5 * np.cos(spin) - 0.5)
             ctx.rel_line_to(h * np.sin(18 * np.pi / 180 - spin), h * np.cos(18 * np.pi / 180 - spin))
             ctx.rel_line_to(h * np.cos(spin), h * np.sin(spin))
             ctx.rel_line_to(-h * np.cos(36 * np.pi / 180 - spin), h * np.sin(36 * np.pi / 180 - spin))
@@ -139,14 +158,14 @@ def draw_stars(cmap: np.array, res: int, gscale=False, filename="output.svg", ba
 
 # Replaces image pixels with circles of varying radius according to shade
 # Single tone only, specified tone in args.cc, default is grayscale
-def draw_dot_map(cmap: np.array, res: int, filename="output.svg", background=5):
+def draw_dot_map(cmap: np.array, res: int, filename="output.svg", background=5, colour=(0, 0, 0)):
     cmap = grayscale(cmap)
     sfc, ctx, cmap = setup_vector_draw(cmap, res, filename)
     draw_bg(background, cmap.shape[1], cmap.shape[0], ctx)
-    ctx.set_source_rgb(*args.cc)
+    ctx.set_source_rgb(*colour)
     for x, i in enumerate(cmap):
         for y, j in enumerate(i):
-            ctx.arc(y, x, (1 - j[0])/1.5, 0, 2 * math.pi)
+            ctx.arc(y + 0.5, x + 0.5, (1 - j[0])/1.5, 0, 2 * math.pi)
             ctx.close_path()
             ctx.fill()
     sfc.finish()
@@ -214,9 +233,10 @@ if __name__ == '__main__':
     # Instituting parsearg operations before running main
     parser = argparse.ArgumentParser()
     parser.add_argument("f", help='Filename of image to alter')
-    parser.add_argument("-o", default='output', help='Filename of output image')
-    parser.add_argument("-m", default='pixelize', help='Select Mode, Valid options are:'
-                                                       ' arrows, pixelize, circles, dotty, squiggles, stars')
+    parser.add_argument("-o", default='output', help='Filename of output image (extension not required)')
+    parser.add_argument("-m", default='pixelize', choices=("arrows", "pixelize", "circles", "dotty",
+                                                           "squiggles", "stars"),
+                        help='Select Mode')
     parser.add_argument("-r", default=20, help='Number of pixels to pixelate image by (Integer)', type=int)
     parser.add_argument("-s", default=10, help='Size of Vector Image', type=int)
     parser.add_argument("-g", default=False, help='Enable Grayscale (True or False)', type=bool)
