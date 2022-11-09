@@ -123,7 +123,7 @@ def draw_circle(cmap: np.array, res: int, gscale=False, filename="output.svg", b
     for x, i in enumerate(cmap):
         for y, j in enumerate(i):
             ctx.set_source_rgb(*j)
-            ctx.arc(y, x, 0.5, 0, 2 * math.pi)
+            ctx.arc(y + 0.5, x + 0.5, 0.5, 0, 2 * math.pi)
             ctx.close_path()
             ctx.fill()
     sfc.finish()

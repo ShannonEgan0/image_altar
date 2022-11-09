@@ -1,6 +1,6 @@
 # Image Altar
 
-#### Video Demo:  <URL HERE>
+#### Video Demo:  https://youtu.be/rZBCcBunaYA
 #### External Libraries required:    
     numpy
     cairo
@@ -144,9 +144,9 @@ that is used to pixelize the original image.
 Example of pixelize output below:
 > python project.py Readme_Photos/Olive.jpg -r 20
 
-|              Original picture of Olive              |      python project.py Dog_Photos/Olive.jpg -r 20      |      python project.py Dog_Photos/Olive.jpg -r 30      |
-|:---------------------------------------------------:|:------------------------------------------------------:|:------------------------------------------------------:|
-| <img src="Readme_Photos/Olive_rm.jpg" height="600"> | <img src="Readme_Photos/Olive -r 20.png" height="600"> | <img src="Readme_Photos/Olive -r 30.png" height="600"> |
+|            Original picture of Olive             |      python project.py Dog_Photos/Olive.jpg -r 20      |      python project.py Dog_Photos/Olive.jpg -r 30      |
+|:------------------------------------------------:|:------------------------------------------------------:|:------------------------------------------------------:|
+| <img src="Readme_Photos/Olive.jpg" height="600"> | <img src="Readme_Photos/Olive -r 20.png" height="600"> | <img src="Readme_Photos/Olive -r 30.png" height="600"> |
 
 ### Circles
 The simplest mode, circles replaces each pixel block with a circle reflecting the colour of the block. This mode works 
@@ -227,8 +227,11 @@ directory, to test operation when failing to find intended file input.
 
 ## Thanks to CS50P
 Link to information for the CS50P course which inspired this project can be found at https://cs50.harvard.edu/python/2022/
+Note to potential CS50P reviewers (which I know don't really exist), to not encounter issues with space, when I uploaded 
+this for the course I did not upload all the example readme images, a better version of the readme can be found at my 
+github repository below.
 
 ## Contact
 Shannon Egan - shan@egan.mobi
 
-Repo - [NEED TO ADD TO FINAL]
+Link to project - https://github.com/ShannonEgan0/image_altar.git

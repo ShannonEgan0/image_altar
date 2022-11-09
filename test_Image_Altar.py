@@ -2,7 +2,7 @@
 # Note that the unit test will refer to files "test.png" and "test.svg", if these already exist errrors will be raised
 
 from pytest import raises
-from project import grayscale, distribute_both_ends, setup_vector_draw, pix_to_image, pixellate
+from Image_Altar import grayscale, distribute_both_ends, setup_vector_draw, pix_to_image, pixellate
 import numpy as np
 import os
 import sys
